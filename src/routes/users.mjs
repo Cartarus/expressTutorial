@@ -3,6 +3,8 @@ import { checkSchema, matchedData, query, validationResult } from "express-valid
 import { mockUsers } from "../utils/constants.mjs";
 import { CreateUservalidationSchema } from "../utils/validationSchemas.mjs";
 import { resolveIndexByuserId } from "../utils/middlewares.mjs";
+import { User } from "../mongoose/schemas/user.mjs";
+import { hashPassword } from "../utils/helpers.mjs";
 
 const router = Router();
 
@@ -51,23 +53,27 @@ router.get('/api/users',
 })
 
 router.post('/api/users',
-    checkSchema(CreateUservalidationSchema)
-     ,
-     (req,res)=>{
-     const result = validationResult(req)
-     console.log(result);
- 
-     if (!result.isEmpty()) {
-         return res.status(400).send({errors:result.array()})
-     }
-     
-     const data = matchedData(req)
-     // console.log(data)
-     // const {body} = req
-     const newUser = {id:mockUsers[mockUsers.length-1].id + 1 ,...data}
-     mockUsers.push(newUser)
-     return res.status(201).send(newUser)
- }
+    checkSchema(CreateUservalidationSchema),
+     async (req,res)=>{
+        const result = validationResult(req)
+        if (!result.isEmpty()) {
+            return res.status(400).send(result.array())
+        }
+        const {body} = req
+        const data = matchedData(req)
+        console.log(data)
+        data.password = hashPassword(data.password)
+        console.log(data)
+        const newUser = new User(data)
+        try {
+            const savedUser = await newUser.save()
+            return res.status(201).send(savedUser)
+        } catch (error) {
+            console.log(error)
+            return res.sendStatus(400)
+        }
+        
+    }
 )
 
 router.put('/api/users/:id',resolveIndexByuserId,(request,response)=>{

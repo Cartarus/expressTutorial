@@ -18,5 +18,8 @@ export const CreateUservalidationSchema = {
         notEmpty:{
             errorMessage :'displayName Cannot Be Empty'
         }
+    },
+    password :{
+        notEmpty:true
     }
 }
